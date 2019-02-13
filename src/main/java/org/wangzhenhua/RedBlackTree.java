@@ -100,6 +100,7 @@ public class RedBlackTree {
     // 如果当前root是null，那么就将root设置为当前插入的节点
     if (root == null) {
       root = node;
+      return;
     }
     insert(root, node);
   }
@@ -137,7 +138,7 @@ public class RedBlackTree {
      Node leftChild = x.left;
      father.right = leftChild;
      if (leftChild != null) {
-       leftChild.parent = father;
+         leftChild.parent = father;
      }
 
      father.parent = x;
@@ -146,12 +147,12 @@ public class RedBlackTree {
      Node grandfather = x.parent.parent;
      if (root == father) {
        this.root = x;
-       x.parent = grandfather;
        return;
      }
 
+     x.parent = grandfather;
+
      if (grandfather != null) {
-         x.parent = grandfather;
          if (grandfather.left == father) {
              grandfather.left = x;
          }else {
@@ -187,7 +188,7 @@ public class RedBlackTree {
   private void rightRotate(Node x) {
 
      Node father = x.parent;
-     if (father == null){
+     if (father == null) {
          root = x;
          return;
      }
@@ -204,8 +205,9 @@ public class RedBlackTree {
      Node grandFather = father.parent;
      if (father == root) {
          this.root = x;
-         x.parent = grandFather;
      }
+
+     x.parent = grandFather;
 
      if (grandFather != null) {
        if (grandFather.left == father) {
@@ -242,18 +244,70 @@ public class RedBlackTree {
     }
 
     target.setColor(RED);
-    fixme(target);
+    insertCase1(target);
     return target;
   }
 
-
-  /**
-   * 修复当前插入的节点，确认是否需要修复
-   * @param node
-   */
-  private void fixme(Node node) {
-    
+  private void insertCase1(Node node) {
+    if (node.getParent() == null) {
+        setBlack(node);
+    }else {
+         insertCase2(node);
+    }
   }
+
+  private void insertCase2(Node node) {
+    if (BLACK.equals(node.getColor())) {
+      return;
+    }else
+      insertCase3(node);
+  }
+
+  private void insertCase3(Node node) {
+     if (RED.equals(node.getParent().color) && RED.equals(getUncle(node).getColor())) {
+       flipColor(node);
+       insertCase1(node.getParent().getParent());
+     }else
+       insertCase4(node);
+  }
+
+  private void insertCase4(Node node) {
+     if (RED.equals(node.getParent().color) && node.getParent().right == node &&
+         getGrandfather(node).left == node.getParent()) {
+         leftRotate(node);
+         insertCase5(node);
+     }else if (RED.equals(node.getParent().color) && node.getParent().left == node &&
+         getGrandfather(node).right == node.getParent()) {
+         rightRotate(node);
+         insertCase5(node);
+     }
+  }
+
+  private void insertCase5(Node node) {
+      if (RED.equals(node.getParent().getColor()) && node.getParent().left == node &&
+          getGrandfather(node).left == node.getParent()) {
+          rightRotate(getGrandfather(node));
+          flipColor(node);
+      }else if (RED.equals(node.getParent().getColor()) && node.getParent().right == node &&
+          getGrandfather(node).right == node.getParent()) {
+          leftRotate(getGrandfather(node));
+          flipColor(node);
+      }
+  }
+
+
+  private Node getUncle(Node node) {
+    if (node.getParent().getParent().left == node) {
+      return node.getParent().getParent().right;
+    }else {
+      return node.getParent().getParent().left;
+    }
+  }
+
+  private Node getGrandfather(Node node) {
+    return node.getParent().getParent();
+  }
+
 
   private static final String RED = "red";
 
@@ -265,7 +319,9 @@ public class RedBlackTree {
    * @param uncle
    * @param parent
    */
-  private void flipColor(Node node,Node uncle,Node parent) {
+  private void flipColor(Node node) {
+     Node uncle = getUncle(node);
+     Node parent = node.getParent();
      if (uncle != null && RED.equals(uncle.getColor())) {
        setBlack(parent);
        setBlack(uncle);

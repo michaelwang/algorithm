@@ -27,7 +27,8 @@ public class BTreePrinter {
     List<Node<T>> newNodes = new ArrayList<>();
     for (Node<T> node : nodes) {
       if (node != null) {
-        System.out.print(node.getKey());
+        System.out.print(node.getKey() + "["  + node.getColor() + "]");
+        //System.out.print(node.getKey());
         newNodes.add(node.getLeft());
         newNodes.add(node.getRight());
       } else {

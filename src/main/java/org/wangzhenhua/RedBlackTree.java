@@ -1,6 +1,7 @@
 package org.wangzhenhua;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class RedBlackTree {
@@ -12,7 +13,7 @@ public class RedBlackTree {
   /**
    * 初始化传入一个节点集合，并以此集合构造出一个红黑树
    */
-  public RedBlackTree(Set<Node> nodes) {
+  public RedBlackTree(List<Node> nodes) {
     if (null == nodes || nodes.size() == 0) {
       return;
     }
@@ -100,122 +101,71 @@ public class RedBlackTree {
     // 如果当前root是null，那么就将root设置为当前插入的节点
     if (root == null) {
       root = node;
+      setBlack(node);
       return;
     }
     insert(root, node);
   }
 
   /**
+   *   x            y
+   *    \   ->     /
+   *    y         x
    *
-   *   case 1
-   *         z                  z
-   *        /                   /
-   *        y    --->           x
-   *         \                 /
-   *          x               y
-   *         /                \
-   *        u                 u
-   *
-   *   case 2
-   *        z                  z
-   *         \                  \
-   *         y   ----->          x
-   *          \                  /
-   *           x                y
-   *          /                 \
-   *         u                   u
    *
    * @param x 当前旋转的节点
    */
   private void leftRotate(Node x) {
 
-     Node father = x.parent;
-     if (father == null) {
-         this.root = x;
-         return;
-     }
+       Node y = x.right;
+       x.right = y.left;
+       if (y.left != null) {
+         y.left.parent = x;
+       }
 
-     Node leftChild = x.left;
-     father.right = leftChild;
-     if (leftChild != null) {
-         leftChild.parent = father;
-     }
-
-     father.parent = x;
-     x.left = father;
-
-     Node grandfather = x.parent.parent;
-     if (root == father) {
-       this.root = x;
-       return;
-     }
-
-     x.parent = grandfather;
-
-     if (grandfather != null) {
-         if (grandfather.left == father) {
-             grandfather.left = x;
+       y.parent = x.parent;
+       if (x.parent == null) {
+           this.root = y;
+       }else {
+         if (x.parent.left == x) {
+             x.parent.left = y;
          }else {
-             grandfather.right = x;
+             x.parent.right = y;
          }
-     }
+       }
+
+       x.parent = y;
+       y.left = x;
 
   }
 
   /**
-   *   case 1
-   *
-   *      z              z
-   *     /              /
-   *    y     --->     x
-   *   /                \
-   *  x                 y
-   *   \               /
-   *    u             u
-   *
-   *   case 2
-   *
-   *   z                z
-   *    \    ----->      \
-   *     y                x
-   *    /                  \
-   *   x                    y
-   *    \                  /
-   *     u                u
+   *     x           y
+   *    /    ->       \
+   *   y               x
    *
    * @param x 当前被旋转的节点
    */
   private void rightRotate(Node x) {
+      Node y = x.left;
+      x.left = y.right;
+      if (y.right != null) {
+          y.right.parent = x;
+      }
 
-     Node father = x.parent;
-     if (father == null) {
-         root = x;
-         return;
-     }
+      y.parent = x.parent;
+      if (x.parent == null) {
+          this.root = y;
+      }else {
+          if (x.parent.left == x){
+              x.parent.left = y;
+          }else {
+              x.parent.right = y;
+          }
+      }
 
-     Node rightChild = x.right;
-     father.left = rightChild;
-     if (rightChild != null) {
-       rightChild.parent = father;
-     }
-
-     father.parent = x;
-     x.right = father;
-
-     Node grandFather = father.parent;
-     if (father == root) {
-         this.root = x;
-     }
-
-     x.parent = grandFather;
-
-     if (grandFather != null) {
-       if (grandFather.left == father) {
-         grandFather.left = x;
-       }else {
-         grandFather.right = x;
-       }
-     }
+      x.parent = y;
+      y.right = x;
 
   }
 
@@ -231,20 +181,23 @@ public class RedBlackTree {
       }
       if (base.left == null) {
         base.left = target;
+        target.parent = base;
       }
     }
 
-    if (target.key > base.key) {
+    if (target.key >= base.key) {
       if (base.right != null) {
         return insert(base.right, target);
       }
       if (base.right == null) {
         base.right = target;
+        target.parent = base;
       }
     }
 
     target.setColor(RED);
     insertCase1(target);
+    BTreePrinter.printNode(root);
     return target;
   }
 
@@ -264,10 +217,12 @@ public class RedBlackTree {
   }
 
   private void insertCase3(Node node) {
-     if (RED.equals(node.getParent().color) && RED.equals(getUncle(node).getColor())) {
-       flipColor(node);
-       insertCase1(node.getParent().getParent());
-     }else
+     if (RED.equals(node.getParent().color) && getUncle(node) != null && RED.equals(getUncle(node).getColor())) {
+       setRed(getGrandfather(node));
+       setBlack(getGrandfather(node).left);
+       setBlack(getGrandfather(node).right);
+       insertCase1(getGrandfather(node));
+     } else
        insertCase4(node);
   }
 
@@ -280,7 +235,8 @@ public class RedBlackTree {
          getGrandfather(node).right == node.getParent()) {
          rightRotate(node);
          insertCase5(node);
-     }
+     }else
+         insertCase5(node);
   }
 
   private void insertCase5(Node node) {
@@ -297,6 +253,11 @@ public class RedBlackTree {
 
 
   private Node getUncle(Node node) {
+
+    if (node.getParent() == null || node.getParent().getParent() == null) {
+        return null;
+    }
+
     if (node.getParent().getParent().left == node) {
       return node.getParent().getParent().right;
     }else {
@@ -320,13 +281,10 @@ public class RedBlackTree {
    * @param parent
    */
   private void flipColor(Node node) {
-     Node uncle = getUncle(node);
      Node parent = node.getParent();
-     if (uncle != null && RED.equals(uncle.getColor())) {
-       setBlack(parent);
-       setBlack(uncle);
-       setRed(node);
-     }
+     setBlack(parent);
+     setRed(parent.right);
+     setRed(parent.left);
   }
 
   private void setBlack(Node node) {
